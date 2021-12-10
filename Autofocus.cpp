@@ -23,20 +23,22 @@ using namespace cv;
 class Photo{
 	public:
 		short int position;
-		float contrast;
+		double contrast;
 		string file;
 		Mat image;
 		
-		void setContrast(float value){
+		void setContrast(double value){
 			contrast = value;
 		}
 };
 
 
 
-float FindContrast(Mat image, short int step1, short int step2){
+double FindContrast(Mat image, short int step1, short int step2){
 	// Alternating 5x5 grid tiled kernel, Regions 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25
-	float summation = 0;
+	//cout << "do I get here?" << endl;
+	double summation = 0;
+	//cout << "row 1" << endl;
 	for(short int row = 1; row < 96; row += step1){ // First Kernel Row
 		for(short int column = 1; column < 128; column += step2){ // Region 1
 			summation += pow((image.at<uchar>(row, column)) * 4 - (image.at<uchar>(row - 1, column)) - (image.at<uchar>(row + 1, column)) - (image.at<uchar>(row, column - 1)) - (image.at<uchar>(row, column + 1)), 2);
@@ -48,6 +50,7 @@ float FindContrast(Mat image, short int step1, short int step2){
 			summation += pow((image.at<uchar>(row, column)) * 4 - (image.at<uchar>(row - 1, column)) - (image.at<uchar>(row + 1, column)) - (image.at<uchar>(row, column - 1)) - (image.at<uchar>(row, column + 1)), 2);
 		}
 	}
+	//cout << "row 2" << endl;
 	for(short int row = 96; row < 191; row += step1){ // Second Kernel Row
 		for(short int column = 128; column < 255; column += step2){ // Region 7
 			summation += pow((image.at<uchar>(row, column)) * 4 - (image.at<uchar>(row - 1, column)) - (image.at<uchar>(row + 1, column)) - (image.at<uchar>(row, column - 1)) - (image.at<uchar>(row, column + 1)), 2);
@@ -56,6 +59,7 @@ float FindContrast(Mat image, short int step1, short int step2){
 			summation += pow((image.at<uchar>(row, column)) * 4 - (image.at<uchar>(row - 1, column)) - (image.at<uchar>(row + 1, column)) - (image.at<uchar>(row, column - 1)) - (image.at<uchar>(row, column + 1)), 2);
 		}
 	}
+	//cout << "row 3" << endl;
 	for(short int row = 191; row < 286; row += step1){ // Third Kernel Row
 		for(short int column = 1; column < 128; column += step2){ // Region 11
 			summation += pow((image.at<uchar>(row, column)) * 4 - (image.at<uchar>(row - 1, column)) - (image.at<uchar>(row + 1, column)) - (image.at<uchar>(row, column - 1)) - (image.at<uchar>(row, column + 1)), 2);
@@ -67,6 +71,7 @@ float FindContrast(Mat image, short int step1, short int step2){
 			summation += pow((image.at<uchar>(row, column)) * 4 - (image.at<uchar>(row - 1, column)) - (image.at<uchar>(row + 1, column)) - (image.at<uchar>(row, column - 1)) - (image.at<uchar>(row, column + 1)), 2);
 		}
 	}
+	//cout << "row4" << endl;
 	for(short int row = 286; row < 381; row += step1){ // Fourth Kernel Row
 		for(short int column = 128; column < 255; column += step2){ // Region 17
 			summation += pow((image.at<uchar>(row, column)) * 4 - (image.at<uchar>(row - 1, column)) - (image.at<uchar>(row + 1, column)) - (image.at<uchar>(row, column - 1)) - (image.at<uchar>(row, column + 1)), 2);
@@ -75,6 +80,7 @@ float FindContrast(Mat image, short int step1, short int step2){
 			summation += pow((image.at<uchar>(row, column)) * 4 - (image.at<uchar>(row - 1, column)) - (image.at<uchar>(row + 1, column)) - (image.at<uchar>(row, column - 1)) - (image.at<uchar>(row, column + 1)), 2);
 		}
 	}
+	//cout << "row 5" << endl;
 	for(short int row = 381; row < 476; row += step1){ // Fifth Kernel Row
 		for(short int column = 1; column < 128; column += step2){ // Region 21
 			summation += pow((image.at<uchar>(row, column)) * 4 - (image.at<uchar>(row - 1, column)) - (image.at<uchar>(row + 1, column)) - (image.at<uchar>(row, column - 1)) - (image.at<uchar>(row, column + 1)), 2);
@@ -87,7 +93,7 @@ float FindContrast(Mat image, short int step1, short int step2){
 		}
 	}
 	summation = summation / ((126*94*13)/(step1*step2));
-	//cout << "Contrast of " << L << endl;
+	//cout << "Contrast of " << summation << endl;
 	return summation;
 }
 
@@ -124,22 +130,22 @@ short int LoadDataSetCoarseStage (string path, short int numImages, short int im
 		pic.position = i;
 		pic.image = imread(file, IMREAD_GRAYSCALE);
 		Photos.push_back(pic);
-		cout << "File: " << file << endl;
-		cout << "Loaded image " << i << ".jpeg" << endl;
+		//cout << "File: " << file << endl;
+		//cout << "Loaded image " << i << ".jpeg" << endl;
 		loaded++;
 	}
 	return loaded;
 	}
 	
-short int LoadDataSetFineStage (string path, short int numImages, short int imagespacing, short int dataspacing, short int start, vector<Photo> &Photos){
+short int LoadDataSetFineStage (string path, short int numImages, short int imagespacing, short int dataspacing1, short int dataspacing2, short int start, vector<Photo> &Photos, short int &lbound){
 	short int loaded = 0;
-	short int lbound = start - dataspacing;
-	short int rbound = start + dataspacing;
+	lbound = start - dataspacing1;
+	short int rbound = start + dataspacing1;
 	if (lbound < 0){lbound = 0;}
 	if (rbound > numImages*imagespacing){rbound = numImages*imagespacing;}
 	//cout << "Left bound " << lbound << endl;
 	//cout << "Right bound " << rbound << endl;
-	for(short int i = lbound; i <= rbound; i+= dataspacing){
+	for(short int i = lbound; i <= rbound; i+= dataspacing2){
 		Photo pic;
 		stringstream stream;
 		stream << path << '/' << to_string(i) << ".jpeg";
@@ -160,28 +166,43 @@ auto RunCoarseStageData(short int numImages, short int imagespacing, short int d
 	//Create internal storage
 	vector<Photo> Photos;
 	vector<thread> Threads;
-	vector<float> Contrasts;
+	vector<double> Contrasts;
 	
 	//Load dataset
-	short int numLoaded = LoadDataSetCoarseStage("/home/pi/Desktop/C++/Autofocus Data Sets/100 Image Sets/2021-09-28-15-56-57", numImages, imagespacing, dataspacing, Photos);
-	//short int numLoaded = LoadDataSetCoarseStage("/home/pi/Desktop/C++/Autofocus Data Sets/500 Image Sets/Pipeline2021-09-30-14-33-23", numImages, imagespacing, dataspacing, Photos);
-	cout << "Coarse Stage Data Successfully Loaded" << endl;
-	cout << "Loaded " << numLoaded << " Images" << endl;
+	//short int numLoaded = LoadDataSetCoarseStage("/home/pi/Desktop/C++/Autofocus Data Sets/100 Image Sets/2021-09-28-15-56-57", numImages, imagespacing, dataspacing, Photos);
+	short int numLoaded = LoadDataSetCoarseStage("/home/pi/Desktop/C++/Autofocus Data Sets/500 Image Sets/Pipeline2021-09-30-14-33-23", numImages, imagespacing, dataspacing, Photos);
+	//cout << "Coarse Stage Data Successfully Loaded" << endl;
+	//cout << "Loaded " << numLoaded << " Images" << endl;
 
+
+	/*ProcessContrast(Photos[0], step1, step2);
+	ProcessContrast(Photos[1], step1, step2);
+	ProcessContrast(Photos[2], step1, step2);
+	ProcessContrast(Photos[3], step1, step2);
+	ProcessContrast(Photos[4], step1, step2);
+	ProcessContrast(Photos[5], step1, step2);
+	ProcessContrast(Photos[6], step1, step2);
+	ProcessContrast(Photos[7], step1, step2);
+	ProcessContrast(Photos[8], step1, step2);
+	ProcessContrast(Photos[9], step1, step2);
+	ProcessContrast(Photos[10], step1, step2);*/
+	//cout << "begin processing  data" << endl;
 	//Process dataset
 	for(short int i = 0; i < numLoaded; i++){
 		Threads.push_back(thread(ProcessContrast, ref(Photos[i]), step1, step2));
+		//cout << "Photos[" << i << "] thread started " << endl;
 	}
 	for(short int i = 0; i < numLoaded; i++){
 		Threads[i].join();
+		//cout << "Photos[" << i << "] thread joined " << endl;
 	}
 	for(short int i = 0; i < numLoaded; i++){
 		Contrasts.push_back(Photos[i].contrast);
-		cout << "Photos[" << i << "]: " << Photos[i].contrast << endl;
+		//cout << "Photos[" << i << "]: " << Photos[i].contrast << endl;
 	}
 	
 	//Gather data
-	float MaxContrast = *max_element(Contrasts.begin(), Contrasts.end());
+	double MaxContrast = *max_element(Contrasts.begin(), Contrasts.end());
 	//cout << MaxContrast << endl;
 	auto it = find(Contrasts.begin(), Contrasts.end(), MaxContrast);
 	auto MaxFocus = distance(Contrasts.begin(), it) * dataspacing;
@@ -189,17 +210,19 @@ auto RunCoarseStageData(short int numImages, short int imagespacing, short int d
 	return MaxFocus;
 }
 
-auto RunFineStageData(short int numImages, short int imagespacing, short int dataspacing, short int start, short int step1, short int step2){
+auto RunFineStageData(short int numImages, short int imagespacing, short int dataspacing1, short int dataspacing2, short int start, short int step1, short int step2){
 	
 	//Create internal storage
 	vector<Photo> Photos;
 	vector<thread> Threads;
-	vector<float> Contrasts;
+	vector<double> Contrasts;
+	short int lbound;
 	
 	//Load dataset
-	short int numLoaded = LoadDataSetFineStage("/home/pi/Desktop/C++/Autofocus Data Sets/100 Image Sets/2021-09-28-15-56-57", numImages, imagespacing, dataspacing, start, Photos);
-	//short int numLoaded = LoadDataSetFineStage("/home/pi/Desktop/C++/Autofocus Data Sets/500 Image Sets/Pipeline2021-09-30-14-33-23", numImages, imagespacing, dataspacing, start, Photos);
+	//short int numLoaded = LoadDataSetFineStage("/home/pi/Desktop/C++/Autofocus Data Sets/100 Image Sets/2021-09-28-15-56-57", numImages, imagespacing, dataspacing1, dataspacing2, start, Photos, lbound);
+	short int numLoaded = LoadDataSetFineStage("/home/pi/Desktop/C++/Autofocus Data Sets/500 Image Sets/Pipeline2021-09-30-14-33-23", numImages, imagespacing, dataspacing1, dataspacing2, start, Photos, lbound);
 	//cout << "Fine Stage Data Successfully Loaded" << endl;
+	//cout << "Loaded " << numLoaded << " Images" << endl;
 
 	//Process dataset
 	
@@ -216,10 +239,10 @@ auto RunFineStageData(short int numImages, short int imagespacing, short int dat
 	}
 	
 	//Gather data
-	float MaxContrast = *max_element(Contrasts.begin(), Contrasts.end());
+	double MaxContrast = *max_element(Contrasts.begin(), Contrasts.end());
 	//cout << MaxContrast << endl;
 	auto it = find(Contrasts.begin(), Contrasts.end(), MaxContrast);
-	auto MaxFocus = distance(Contrasts.begin(), it) * dataspacing + start;
+	auto MaxFocus = distance(Contrasts.begin(), it) * dataspacing2 + lbound;
 	//cout << MaxFocus << endl;
 	return MaxFocus;
 }
@@ -261,7 +284,7 @@ auto RunFineStageData(short int numImages, short int imagespacing, short int dat
 
 void RunAutoFocus(short int numImages, short int imagespacing, short int dataspacing1, short int dataspacing2, short int step1, short int step2){
 	short int ipos = RunCoarseStageData(numImages, imagespacing, dataspacing1, step1, step2);
-	short int fpos = RunFineStageData(dataspacing1, imagespacing, dataspacing2, ipos, step1, step2);
+	short int fpos = RunFineStageData(numImages, imagespacing, dataspacing1, dataspacing2, ipos, step1, step2);
 	cout << "Max Focus at position " << fpos << endl;
 }
 
@@ -282,7 +305,9 @@ void RunAutoFocus(short int numImages, short int imagespacing, short int dataspa
 
 int main(int argc, char** argv)
 {
-	RunAutoFocus(100, 5, 50, 5, 2, 2);
+	//RunAutoFocus(100, 5, 50, 5, 2, 2);
+	RunAutoFocus(500, 1, 50, 5, 2, 2);
 	//RunDataAnalysis(500, 1, 2, 2, 2);
  return 0;
 }
+
