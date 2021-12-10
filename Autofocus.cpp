@@ -32,8 +32,171 @@ class Photo{
 		}
 };
 
+double SimpleFindContrast(Mat image, short int step1, short int step2){
+	// Alternating 5x5 grid tiled kernel, Regions 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25
+	//cout << "do I get here?" << endl;
+	double summation = 0;
+	//cout << "row 1" << endl;
+	for(short int row = 1; row < 480; row += step1){ // First Kernel Row
+		for(short int column = 1; column < 640; column += step2){ // Region 1
+			summation += pow((image.at<uchar>(row, column)) * 4 - (image.at<uchar>(row - 1, column)) - (image.at<uchar>(row + 1, column)) - (image.at<uchar>(row, column - 1)) - (image.at<uchar>(row, column + 1)), 2);
+		}
+	}
+	summation = summation / ((480*640)/(step1*step2));
+	//cout << "Contrast of " << summation << endl;
+	return summation;
+}
 
+void FindContrastColumn1(Mat image, short int step1, short int step2, short int row, double &retc1){
+	double summationc1 = 0;
+	for(short int column = 1; column < 128; column += step2){ // Region 1
+			summationc1 += pow((image.at<uchar>(row, column)) * 4 - (image.at<uchar>(row - 1, column)) - (image.at<uchar>(row + 1, column)) - (image.at<uchar>(row, column - 1)) - (image.at<uchar>(row, column + 1)), 2);
+		}
+	retc1 = summationc1;
+}
 
+void FindContrastColumn2(Mat image, short int step1, short int step2, short int row, double &retc2){
+	double summationc2 = 0;
+	for(short int column = 128; column < 255; column += step2){ // Region 7
+			summationc2 += pow((image.at<uchar>(row, column)) * 4 - (image.at<uchar>(row - 1, column)) - (image.at<uchar>(row + 1, column)) - (image.at<uchar>(row, column - 1)) - (image.at<uchar>(row, column + 1)), 2);
+		}
+	retc2 = summationc2;
+}
+
+void FindContrastColumn3(Mat image, short int step1, short int step2, short int row, double &retc3){
+	double summationc3 = 0;
+	for(short int column = 255; column < 382; column += step2){ // Region 3
+			summationc3 += pow((image.at<uchar>(row, column)) * 4 - (image.at<uchar>(row - 1, column)) - (image.at<uchar>(row + 1, column)) - (image.at<uchar>(row, column - 1)) - (image.at<uchar>(row, column + 1)), 2);
+		}
+	retc3 = summationc3;
+}
+
+void FindContrastColumn4(Mat image, short int step1, short int step2, short int row, double &retc4){
+	double summationc4 = 0;
+	for(short int column = 382; column < 509; column += step2){ // Region 9
+			summationc4 += pow((image.at<uchar>(row, column)) * 4 - (image.at<uchar>(row - 1, column)) - (image.at<uchar>(row + 1, column)) - (image.at<uchar>(row, column - 1)) - (image.at<uchar>(row, column + 1)), 2);
+		}
+	retc4 = summationc4;
+}
+
+void FindContrastColumn5(Mat image, short int step1, short int step2, short int row, double &retc5){
+	double summationc5 = 0;
+	for(short int column = 509; column < 636; column += step2){ // Region 5
+			summationc5 += pow((image.at<uchar>(row, column)) * 4 - (image.at<uchar>(row - 1, column)) - (image.at<uchar>(row + 1, column)) - (image.at<uchar>(row, column - 1)) - (image.at<uchar>(row, column + 1)), 2);
+		}
+	retc5 = summationc5;
+}
+
+void FindContrastRow1(Mat image, short int step1, short int step2, double &retr1){
+	double summationr1 = 0;
+	vector<thread> Threadsr1;
+	vector<double> PartialSumsr1;
+	
+	for(short int row = 1; row < 96; row += step1){
+		Threadsr1.push_back(thread(FindContrastColumn1, image, step1, step2, row, ref(PartialSumsr1[-3+3*row])));
+		Threadsr1.push_back(thread(FindContrastColumn3, image, step1, step2, row, ref(PartialSumsr1[-2+3*row])));
+		Threadsr1.push_back(thread(FindContrastColumn5, image, step1, step2, row, ref(PartialSumsr1[-1+3*row])));
+	}
+	for(short int threads; threads < Threadsr1.size(); threads++){
+		Threadsr1[threads].join();
+	}
+	for(short int sums; sums < PartialSumsr1.size(); sums++){
+		summationr1 += PartialSumsr1[sums];
+	}
+	retr1 = summationr1;
+}
+
+void FindContrastRow2(Mat image, short int step1, short int step2, double &retr2){
+	double summationr2 = 0;
+	vector<thread> Threadsr2;
+	vector<double> PartialSumsr2;
+	
+	for(short int row = 1; row < 96; row += step1){
+		Threadsr2.push_back(thread(FindContrastColumn2, image, step1, step2, row, ref(PartialSumsr2[-2+2*row])));
+		Threadsr2.push_back(thread(FindContrastColumn4, image, step1, step2, row, ref(PartialSumsr2[-1+2*row])));
+	}
+	for(short int threads; threads < Threadsr2.size(); threads++){
+		Threadsr2[threads].join();
+	}
+	for(short int sums; sums < PartialSumsr2.size(); sums++){
+		summationr2 += PartialSumsr2[sums];
+	}
+	retr2 = summationr2;
+}
+
+void FindContrastRow3(Mat image, short int step1, short int step2, double &retr3){
+	double summationr3 = 0;
+	vector<thread> Threadsr3;
+	vector<double> PartialSumsr3;
+	
+	for(short int row = 1; row < 96; row += step1){ 
+		Threadsr3.push_back(thread(FindContrastColumn1, image, step1, step2, row, ref(PartialSumsr3[-3+3*row])));
+		Threadsr3.push_back(thread(FindContrastColumn3, image, step1, step2, row, ref(PartialSumsr3[-2+3*row])));
+		Threadsr3.push_back(thread(FindContrastColumn5, image, step1, step2, row, ref(PartialSumsr3[-1+3*row])));
+	}
+	for(short int threads; threads < Threadsr3.size(); threads++){
+		Threadsr3[threads].join();
+	}
+	for(short int sums; sums < PartialSumsr3.size(); sums++){
+		summationr3 += PartialSumsr3[sums];
+	}
+	retr3 = summationr3;
+}
+
+void FindContrastRow4(Mat image, short int step1, short int step2, double &retr4){
+	double summationr4 = 0;
+	vector<thread> Threadsr4;
+	vector<double> PartialSumsr4;
+	
+	for(short int row = 1; row < 96; row += step1){ 
+		Threadsr4.push_back(thread(FindContrastColumn2, image, step1, step2, row, ref(PartialSumsr4[-2+2*row])));
+		Threadsr4.push_back(thread(FindContrastColumn4, image, step1, step2, row, ref(PartialSumsr4[-1+2*row])));
+	}
+	for(short int threads; threads < Threadsr4.size(); threads++){
+		Threadsr4[threads].join();
+	}
+	for(short int sums; sums < PartialSumsr4.size(); sums++){
+		summationr4 += PartialSumsr4[sums];
+	}
+	retr4 = summationr4;
+}
+
+void FindContrastRow5(Mat image, short int step1, short int step2, double &retr5){
+	double summationr5 = 0;
+	vector<thread> Threadsr5;
+	vector<double> PartialSumsr5;
+	
+	for(short int row = 1; row < 96; row += step1){ 
+		Threadsr5.push_back(thread(FindContrastColumn1, image, step1, step2, row, ref(PartialSumsr5[-3+3*row])));
+		Threadsr5.push_back(thread(FindContrastColumn3, image, step1, step2, row, ref(PartialSumsr5[-2+3*row])));
+		Threadsr5.push_back(thread(FindContrastColumn5, image, step1, step2, row, ref(PartialSumsr5[-1+3*row])));
+	}
+	for(short int threads; threads < Threadsr5.size(); threads++){
+		Threadsr5[threads].join();
+	}
+	for(short int sums; sums < PartialSumsr5.size(); sums++){
+		summationr5 += PartialSumsr5[sums];
+	}
+	retr5 = summationr5;
+}
+
+double FindContrastThreaded(Mat image, short int step1, short int step2){
+	double summation = 0;
+	vector<thread> Threads;
+	vector<double> PartialSums;
+	Threads.push_back(thread(FindContrastRow1, image, step1, step2, ref(PartialSums[0])));
+	Threads.push_back(thread(FindContrastRow2, image, step1, step2, ref(PartialSums[1])));
+	Threads.push_back(thread(FindContrastRow3, image, step1, step2, ref(PartialSums[2])));
+	Threads.push_back(thread(FindContrastRow4, image, step1, step2, ref(PartialSums[3])));
+	Threads.push_back(thread(FindContrastRow5, image, step1, step2, ref(PartialSums[4])));
+	for(short int threads; threads < 5; threads++){
+		Threads[threads].join();
+	}
+	for(short int sums; sums <= 5; sums++){
+		summation += PartialSums[sums];
+	}
+	return summation;
+}
 double FindContrast(Mat image, short int step1, short int step2){
 	// Alternating 5x5 grid tiled kernel, Regions 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25
 	//cout << "do I get here?" << endl;
@@ -98,7 +261,7 @@ double FindContrast(Mat image, short int step1, short int step2){
 }
 
 void ProcessContrast(Photo &pic, short int step1, short int step2){
-	pic.setContrast(FindContrast(pic.image, step1, step2));
+	pic.setContrast(FindContrastThreaded(pic.image, step1, step2));
 	//cout << "picture contrast of " << pic.contrast << endl;
 }
 
@@ -169,8 +332,8 @@ auto RunCoarseStageData(short int numImages, short int imagespacing, short int d
 	vector<double> Contrasts;
 	
 	//Load dataset
-	//short int numLoaded = LoadDataSetCoarseStage("/home/pi/Desktop/C++/Autofocus Data Sets/100 Image Sets/2021-09-28-15-56-57", numImages, imagespacing, dataspacing, Photos);
-	short int numLoaded = LoadDataSetCoarseStage("/home/pi/Desktop/C++/Autofocus Data Sets/500 Image Sets/Pipeline2021-09-30-14-33-23", numImages, imagespacing, dataspacing, Photos);
+	short int numLoaded = LoadDataSetCoarseStage("/home/pi/Desktop/C++/Autofocus Data Sets/100 Image Sets/2021-09-28-15-56-57", numImages, imagespacing, dataspacing, Photos);
+	//short int numLoaded = LoadDataSetCoarseStage("/home/pi/Desktop/C++/Autofocus Data Sets/500 Image Sets/Pipeline2021-09-30-14-33-23", numImages, imagespacing, dataspacing, Photos);
 	//cout << "Coarse Stage Data Successfully Loaded" << endl;
 	//cout << "Loaded " << numLoaded << " Images" << endl;
 
@@ -219,8 +382,8 @@ auto RunFineStageData(short int numImages, short int imagespacing, short int dat
 	short int lbound;
 	
 	//Load dataset
-	//short int numLoaded = LoadDataSetFineStage("/home/pi/Desktop/C++/Autofocus Data Sets/100 Image Sets/2021-09-28-15-56-57", numImages, imagespacing, dataspacing1, dataspacing2, start, Photos, lbound);
-	short int numLoaded = LoadDataSetFineStage("/home/pi/Desktop/C++/Autofocus Data Sets/500 Image Sets/Pipeline2021-09-30-14-33-23", numImages, imagespacing, dataspacing1, dataspacing2, start, Photos, lbound);
+	short int numLoaded = LoadDataSetFineStage("/home/pi/Desktop/C++/Autofocus Data Sets/100 Image Sets/2021-09-28-15-56-57", numImages, imagespacing, dataspacing1, dataspacing2, start, Photos, lbound);
+	//hort int numLoaded = LoadDataSetFineStage("/home/pi/Desktop/C++/Autofocus Data Sets/500 Image Sets/Pipeline2021-09-30-14-33-23", numImages, imagespacing, dataspacing1, dataspacing2, start, Photos, lbound);
 	//cout << "Fine Stage Data Successfully Loaded" << endl;
 	//cout << "Loaded " << numLoaded << " Images" << endl;
 
@@ -305,9 +468,8 @@ void RunAutoFocus(short int numImages, short int imagespacing, short int dataspa
 
 int main(int argc, char** argv)
 {
-	//RunAutoFocus(100, 5, 50, 5, 2, 2);
-	RunAutoFocus(500, 1, 50, 5, 2, 2);
+	RunAutoFocus(100, 5, 50, 5, 2, 2);
+	//RunAutoFocus(500, 1, 50, 5, 16, 16);
 	//RunDataAnalysis(500, 1, 2, 2, 2);
  return 0;
 }
-
