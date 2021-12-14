@@ -15,6 +15,7 @@
 
 using namespace std;
 using namespace cv;
+//using namespace string;
 
 /*stringstream stream;
 * strm << int_val << ' ' << 'whatever you want man';
@@ -31,6 +32,45 @@ class Photo{
 			contrast = value;
 		}
 };
+
+class PIDevice{
+	
+	public:
+	//Class Attributes
+		//Device Attributes
+		/*vector<vector<char>> Attributes;
+		vector<vector<char>> Methods;
+		vector<char> DeviceFamily;*/
+		string ConnectionStatus;
+		string ConnectionType;
+		/*vector<char> Axes;
+		vector<char> CurrentPosition;
+		vector<char> MaxPosition;
+		vector<char> MinPosition;
+		vector<char> CurrentVelocity;
+		vector<char> MaxVelocity;
+		vector<char> MinVelocity;
+		vector<char> CurrentAcceleration;
+		vector<char> MaxAcceleration;
+		vector<char> MinAcceleration;
+		vector<char> CurrentDeceleration;
+		vector<char> MaxDeceleration;
+		vector<char> MinDeceleration;
+		vector<char> IsMoving;
+		vector<char> IsMacroRunning;
+		vector<char> TravelRange;
+		vector<char> LoadCapacity;
+		vector<char> Mass;
+		vector<char> Load;
+		vector<char> LengthUnit;
+		vector<char> MinimumIncrementalMotion;*/
+		
+		//Connectivity Attrbutes
+		int socket_desc;
+		struct sockaddr_in server;
+		char *message;
+		char server_reply[20000];
+	};
 
 double SimpleFindContrast(Mat image, short int step1, short int step2){
 	// Alternating 5x5 grid tiled kernel, Regions 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25
@@ -261,7 +301,7 @@ double FindContrast(Mat image, short int step1, short int step2){
 }
 
 void ProcessContrast(Photo &pic, short int step1, short int step2){
-	pic.setContrast(FindContrastThreaded(pic.image, step1, step2));
+	pic.setContrast(FindContrast(pic.image, step1, step2));
 	//cout << "picture contrast of " << pic.contrast << endl;
 }
 
@@ -457,19 +497,400 @@ void RunAutoFocus(short int numImages, short int imagespacing, short int dataspa
 
 
 
+//PIDevice start
+int connectPI(PIDevice &pidevice){
+		//Create socket
+		//cout << pidevice.socket_desc << endl;
+		pidevice.socket_desc = socket(AF_INET , SOCK_STREAM , 0);
+		//cout << pidevice.socket_desc << endl;
+		if (pidevice.socket_desc == -1)
+		{
+			printf("Could not create socket");
+		}
+	
+		pidevice.server.sin_addr.s_addr = inet_addr("169.254.7.154");
+		pidevice.server.sin_family = AF_INET;
+		pidevice.server.sin_port = htons( 50000 );
+		//Connect to remote server
+		if (connect(pidevice.socket_desc , (struct sockaddr *)&pidevice.server , sizeof(pidevice.server)) < 0)
+		{
+			puts("connect error");
+			return 1;
+		}
+
+		puts("Connected\n");
+		string ConnectionStatusString = "Connected";
+		string ConnectionTypeString = "TCPIP";
+		pidevice.ConnectionStatus = ConnectionStatus;
+		pidevice.ConnectionType = ConnectionType;*/
+		return 0;
+}
+
+int sendPI(PIDevice &pidevice, string GCSCommand){
+			stringstream strm;
+			strm << GCSCommand;
+			strm << "\n";
+			string s = strm.str();
+			char* command = new char[s.length() + 1];
+			strcpy(command, s.c_str());
+			//Send some data
+			pidevice.message = command;
+			cout << pidevice.message << endl;
+			if( send(pidevice.socket_desc , pidevice.message , strlen(pidevice.message) , 0) < 0)
+			{
+				puts("Send failed");
+				return 1;
+			}
+			puts("Data Sent\n");
+			
+			delete [] command;
+			return 0;
+		};
+
+int sendrPI(PIDevice &pidevice, string GCSCommand){
+			stringstream strm;
+			strm << GCSCommand;
+			strm << "\n";
+			string s = strm.str();
+			char* command = new char[s.length() + 1];
+			strcpy(command, s.c_str());
+			//Send some data
+			pidevice.message = command;
+			cout << pidevice.message << endl;
+			if( send(pidevice.socket_desc , pidevice.message , strlen(pidevice.message) , 0) < 0)
+			{
+				puts("Send failed");
+				return 1;
+			}
+			puts("Data Sent\n");
+			//Receive a reply from the server
+			cout << pidevice.server_reply << endl;
+			
+			if( recv(pidevice.socket_desc, pidevice.server_reply , 2000 , 0) < 0)
+			{
+				puts("recv failed");
+				puts(pidevice.server_reply);
+			}
+			puts("Reply received\n");
+			puts(pidevice.server_reply);
+			delete [] command;
+			return 0;
+			};
 
 
+int qIDN(PIDevice pidevice){
+		//Send some data
+		pidevice.message = (char*)"*IDN?\n";
+		if( send(pidevice.socket_desc , pidevice.message , strlen(pidevice.message) , 0) < 0)
+		{
+			puts("Send failed");
+			return 1;
+		}
+		puts("Data Sent\n");
+		//Receive a reply from the server
+		cout << pidevice.server_reply << endl;
+		
+		if( recv(pidevice.socket_desc, pidevice.server_reply , 2000 , 0) < 0)
+		{
+			puts("recv failed");
+			puts(pidevice.server_reply);
+		}
+		puts("Reply received\n");
+		puts(pidevice.server_reply);
+		return 0;
+}
+
+int qHPA(PIDevice pidevice){
+		//Send some data
+		pidevice.message = (char*)"HPA?\n";
+		if( send(pidevice.socket_desc , pidevice.message , strlen(pidevice.message) , 0) < 0)
+		{
+			puts("Send failed");
+			return 1;
+		}
+		puts("Data Sent\n");
+		//Receive a reply from the server
+		cout << pidevice.server_reply << endl;
+		
+		if( recv(pidevice.socket_desc, pidevice.server_reply , 40000 , 0) < 0)
+		{
+			puts("recv failed");
+			puts(pidevice.server_reply);
+		}
+		puts("Reply received\n");
+		puts(pidevice.server_reply);
+		return 0;
+}
+
+int qHLP(PIDevice pidevice){
+		//Send some data
+		pidevice.message = (char*)"HLP?\n";
+		if( send(pidevice.socket_desc , pidevice.message , strlen(pidevice.message) , 0) < 0)
+		{
+			puts("Send failed");
+			return 1;
+		}
+		puts("Data Sent\n");
+		//Receive a reply from the server
+		cout << pidevice.server_reply << endl;
+		
+		if( recv(pidevice.socket_desc, pidevice.server_reply , 40000 , 0) < 0)
+		{
+			puts("recv failed");
+			puts(pidevice.server_reply);
+		}
+		puts("Reply received\n");
+		puts(pidevice.server_reply);
+		return 0;
+}
+
+int qPOS(PIDevice pidevice){
+		//Send some data
+		pidevice.message = (char*)"POS?\n";
+		if( send(pidevice.socket_desc , pidevice.message , strlen(pidevice.message) , 0) < 0)
+		{
+			puts("Send failed");
+			return 1;
+		}
+		puts("Data Sent\n");
+		//Receive a reply from the server
+		cout << pidevice.server_reply << endl;
+		
+		if( recv(pidevice.socket_desc, pidevice.server_reply , 2000 , 0) < 0)
+		{
+			puts("recv failed");
+			puts(pidevice.server_reply);
+		}
+		puts("Reply received\n");
+		puts(pidevice.server_reply);
+		return 0;
+}
+
+int MVR(PIDevice pidevice, string axes, double* targets){
+			stringstream strm;
+			strm << "MVR ";
+			for(int i = 0; i < axes.length(); i+=2){
+				strm << axes[i] << " " << targets[i/2];
+				if (i < axes.length() - 1){
+					strm << " ";
+				}
+			}
+			strm << "\n";
+			string s = strm.str();
+			char* command = new char[s.length() + 1];
+			strcpy(command, s.c_str());
+			//Send some data
+			pidevice.message = command;
+			cout << pidevice.message << endl;
+			if( send(pidevice.socket_desc , pidevice.message , strlen(pidevice.message) , 0) < 0)
+			{
+				puts("Send failed");
+				return 1;
+			}
+			puts("Data Sent\n");
+			delete [] command;
+			return 0;
+			};
+			
+int MOV(PIDevice pidevice, string axes, double* targets){
+			stringstream strm;
+			strm << "MOV ";
+			for(int i = 0; i < axes.length(); i+=2){
+				strm << axes[i] << " " << targets[i/2];
+				if (i < axes.length() - 1){
+					strm << " ";
+				}
+			}
+			strm << "\n";
+			string s = strm.str();
+			char* command = new char[s.length() + 1];
+			strcpy(command, s.c_str());
+			//Send some data
+			pidevice.message = command;
+			cout << pidevice.message << endl;
+			if( send(pidevice.socket_desc , pidevice.message , strlen(pidevice.message) , 0) < 0)
+			{
+				puts("Send failed");
+				return 1;
+			}
+			puts("Data Sent\n");
+			delete [] command;
+			return 0;
+			};
+			
+int qMOV(PIDevice pidevice, string axes, double *targets){
+			stringstream strm;
+			strm << "MOV? ";
+			for(int i = 0; i < axes.length(); i+=2){
+				strm << axes[i];
+				if (i < axes.length() - 2){
+					strm << " ";
+				}
+			}
+			strm << "\n";
+			string s = strm.str();
+			char* command = new char[s.length() + 1];
+			strcpy(command, s.c_str());
+			//Send some data
+			pidevice.message = command;
+			cout << pidevice.message << endl;
+			if( send(pidevice.socket_desc , pidevice.message , strlen(pidevice.message) , 0) < 0)
+			{
+				puts("Send failed");
+				return 1;
+			}
+			puts("Data Sent\n");
+			//Receive a reply from the server
+			cout << pidevice.server_reply << endl;
+			
+			if( recv(pidevice.socket_desc, pidevice.server_reply , 2000 , 0) < 0)
+			{
+				puts("recv failed");
+				puts(pidevice.server_reply);
+			}
+			puts("Reply received\n");
+			puts(pidevice.server_reply);
+			delete [] command;
+			return 0;
+			};
 
 
+int SVO(PIDevice pidevice, string szAxes, string pbValueArray){
+			stringstream strm;
+			strm << "SVO ";
+			for(int i = 0; i < szAxes.length(); i+=2){
+				strm << szAxes[i] << " " << pbValueArray[i];
+				if (i < szAxes.length() - 2){
+					strm << " ";
+				}
+			}
+			strm << "\n";
+			string s = strm.str();
+			char* command = new char[s.length() + 1];
+			strcpy(command, s.c_str());
+			//Send some data
+			pidevice.message = command;
+			cout << pidevice.message << endl;
+			if( send(pidevice.socket_desc , pidevice.message , strlen(pidevice.message) , 0) < 0)
+			{
+				puts("Send failed");
+				return 1;
+			}
+			puts("Data Sent\n");
+			/*//Receive a reply from the server
+			cout << pidevice.server_reply << endl;
+			
+			if( recv(pidevice.socket_desc, pidevice.server_reply , 2000 , 0) < 0)
+			{
+				puts("recv failed");
+				puts(pidevice.server_reply);
+			}
+			puts("Reply received\n");
+			puts(pidevice.server_reply);*/
+			delete [] command;
+			return 0;
+			};
+			
+int qSVO(PIDevice pidevice, string szAxes, double *pbValueArray){
+			stringstream strm;
+			strm << "SVO? ";
+			for(int i = 0; i < szAxes.length(); i+=2){
+				strm << szAxes[i];
+				if (i < szAxes.length() - 2){
+					strm << " ";
+				}
+			}
+			strm << "\n";
+			string s = strm.str();
+			char* command = new char[s.length() + 1];
+			strcpy(command, s.c_str());
+			//Send some data
+			pidevice.message = command;
+			cout << pidevice.message << endl;
+			if( send(pidevice.socket_desc , pidevice.message , strlen(pidevice.message) , 0) < 0)
+			{
+				puts("Send failed");
+				return 1;
+			}
+			puts("Data Sent\n");
+			//Receive a reply from the server
+			cout << pidevice.server_reply << endl;
+			
+			if( recv(pidevice.socket_desc, pidevice.server_reply , 2000 , 0) < 0)
+			{
+				puts("recv failed");
+				puts(pidevice.server_reply);
+			}
+			puts("Reply received\n");
+			puts(pidevice.server_reply);
+			delete [] command;
+			return 0;
+			};
+			
+			
+int qMAN(PIDevice pidevice, string question){
+			stringstream strm;
+			strm << "MAN? " << question;
+			strm << "\n";
+			string s = strm.str();
+			char* command = new char[s.length() + 1];
+			strcpy(command, s.c_str());
+			//Send some data
+			pidevice.message = command;
+			cout << pidevice.message << endl;
+			if( send(pidevice.socket_desc , pidevice.message , strlen(pidevice.message) , 0) < 0)
+			{
+				puts("Send failed");
+				return 1;
+			}
+			puts("Data Sent\n");
+			//Receive a reply from the server
+			cout << pidevice.server_reply << endl;
+			
+			if( recv(pidevice.socket_desc, pidevice.server_reply , 2000 , 0) < 0)
+			{
+				puts("recv failed");
+				puts(pidevice.server_reply);
+			}
+			puts("Reply received\n");
+			puts(pidevice.server_reply);
+			delete [] command;
+			return 0;
+			};
 
-
-
-
+//PIdevice end
 
 int main(int argc, char** argv)
 {
+	string axes = "X Y Z U V W";
+	double targets1[6] = {1,2,3,4,5,6};
+	double targets2[6] = {7,7,7,7,7,7};
+	double targets3[6] = {-2,-2,-2,-2,-2,-2};
+	double* servostates;
+	PIDevice pidevice;
+	int dummy = connectPI(pidevice);
+	qIDN(pidevice);
+	SVO(pidevice, "X Y Z U V W", "0 0 0 0 0 0");
+	qSVO(pidevice, "X Y Z U V W", servostates);
+	SVO(pidevice, "X Y Z U V W", "1 1 1 1 1 1");
+	qSVO(pidevice, "X Y Z U V W", servostates);
+	MOV(pidevice, axes, targets1);
+	MOV(pidevice, axes, targets2);
+	qMOV(pidevice, axes, targets1);
+	MVR(pidevice, axes, targets3);
+	qMOV(pidevice, axes, targets1);
+	sendrPI(pidevice, "VER?");
+	sendPI(pidevice, "MOV X 15");
+	//qPOS(pidevice);
+	//qHLP(pidevice);
+	//qPOS(pidevice);
+	//qHPA(pidevice);
+	//sendPI(pidevice, "MOV X 1 Z 10");
+	//sendrPI(pidevice, "HLP?");
+	
 	RunAutoFocus(100, 5, 50, 5, 2, 2);
 	//RunAutoFocus(500, 1, 50, 5, 16, 16);
 	//RunDataAnalysis(500, 1, 2, 2, 2);
- return 0;
+	close(pidevice.socket_desc);
+    return 0;
 }
