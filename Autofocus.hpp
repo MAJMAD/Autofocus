@@ -37,17 +37,21 @@ double FindContrast(cv::Mat image, short int step1, short int step2);
 
 void ProcessContrast(Photo &pic, short int step1, short int step2);
 
-short int LoadDataSetCoarseStage (std::string path, short int numImages, short int imagespacing, short int dataspacing, std::vector<Photo> &Photos);
+//short int LoadDataSetCoarseStage (std::string path, short int numImages, short int imagespacing, short int dataspacing, std::vector<Photo> &Photos);
 
-short int LoadDataSetFineStage (std::string path, short int numImages, short int imagespacing, short int dataspacing1, short int dataspacing2, short int start, std::vector<Photo> &Photos, short int &lbound);
+//short int LoadDataSetFineStage (std::string path, short int numImages, short int imagespacing, short int dataspacing1, short int dataspacing2, short int start, std::vector<Photo> &Photos, short int &lbound);
 
-short int ImageCapture(PIDevice pidevice, cv::VideoCapture cap, short int imagespacing, std::vector<Photo> &Photos, double startpos, double* endpos, std::string axes);
+void showImage(cv::Mat image);
 
-double RunCoarseStageData(PIDevice pidevice, cv::VideoCapture cap, short int numImages, short int imagespacing, short int dataspacing, short int step1, short int step2);
+short int ImageCapture(PIDevice &pidevice, cv::VideoCapture &cap, double dataspacing, std::vector<Photo> &Photos, double startpos, double endpos);
 
-auto RunFineStageData(short int numImages, short int imagespacing, short int dataspacing1, short int dataspacing2, short int start, short int step1, short int step2);
+short int ImageCaptureOnTheFly(PIDevice &pidevice, cv::VideoCapture &cap, double dataspacing, std::vector<Photo> &Photos, double startpos, double endpos);
 
-void RunAutoFocus(short int numImages, short int imagespacing, short int dataspacing1, short int dataspacing2, short int step1, short int step2);
+double RunStage(PIDevice &pidevice, cv::VideoCapture &cap, double dataspacing, double start, double end, short int step1, short int step2);
+
+//auto RunFineStageData(short int numImages, short int imagespacing, short int dataspacing1, short int dataspacing2, short int start, short int step1, short int step2);
+
+double RunAutoFocus(PIDevice &pidevice, cv::VideoCapture &cap, double start, double end, short int step1, short int step2);
 
 
 

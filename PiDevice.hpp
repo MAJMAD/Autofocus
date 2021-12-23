@@ -74,7 +74,7 @@ class PIDevice{
 		//Class Methods
 		
 			//User Methods
-			int WaitOnTarget();
+			void WaitOnTarget();
 			
 			//TCP Connection Methods
 			int connectTCP();
