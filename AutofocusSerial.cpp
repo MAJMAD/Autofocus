@@ -11,11 +11,11 @@
 using namespace std;
 using namespace mn::CppLinuxSerial;
 
-int main() {
+/*int main() {
 	// Create serial port object and open serial port
 	SerialPort serialPort("/dev/ttyUSB0", BaudRate::B_115200);
 	// Use SerialPort serialPort("/dev/ttyACM0", 13000); instead if you want to provide a custom baud rate
-	serialPort.SetTimeout(0); // Block when reading until any data is received
+	serialPort.SetTimeout(0); // Block when reading until any data is received//-1 blocks 0 does not 
 	serialPort.Open();
 
 	// Write some ASCII data
@@ -59,4 +59,4 @@ int main() {
 
 	// Close the serial port
 	serialPort.Close();
-}
+}*/

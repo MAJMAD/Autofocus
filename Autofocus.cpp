@@ -101,8 +101,6 @@ short int LoadDataSetCoarseStage (string path, short int numImages, short int im
 		pic.position = i;
 		pic.image = imread(file, IMREAD_GRAYSCALE);
 		Photos.push_back(pic);
-		//cout << "File: " << file << endl;
-		//cout << "Loaded image " << i << ".jpeg" << endl;
 		loaded++;
 	}
 	return loaded;
@@ -114,8 +112,6 @@ short int LoadDataSetFineStage (string path, short int numImages, short int imag
 	short int rbound = start + dataspacing1;
 	if (lbound < 0){lbound = 0;}
 	if (rbound > numImages*imagespacing){rbound = numImages*imagespacing;}
-	//cout << "Left bound " << lbound << endl;
-	//cout << "Right bound " << rbound << endl;
 	for(short int i = lbound; i <= rbound; i+= dataspacing2){
 		Photo pic;
 		stringstream stream;
@@ -125,20 +121,56 @@ short int LoadDataSetFineStage (string path, short int numImages, short int imag
 		pic.position = i;
 		pic.image = imread(file, IMREAD_GRAYSCALE);
 		Photos.push_back(pic);
-		//cout << "File: " << file << endl;
-		//cout << "Loaded image " << i << ".jpeg" << endl;
 		loaded++;
 	}
 	return loaded;
 }
 
-auto RunCoarseStageData(short int numImages, short int imagespacing, short int dataspacing, short int step1, short int step2){
+/*short int ImageCapture(PIDevice pidevice, VideoCapture cap, short int imagespacing, vector<Photo> &Photos, double startpos, double* endpos){
+	pidevice.sendSerial("MOV 1 0");
+	//waitontarget todo
+	int index = 0;
+	for (double i = startpos; i <= endpos[0]; i += imagespacing){
+		cap.read(Photos[index].image);
+		index++;
+		pidevice.sendSerial("MVR 1" +  to_string(imagespacing);
+		//waitontarget todo 
+	}
+	return index;
+}
+
+/*short int ImageCaptureOnTheFly(PIDevice pidevice, VideoCapture cap, short int imagespacing, vector<Photo> &Photos, double startpos, double* endpos, string axis){
+	cout << "here?" << endl;
+	cout << axis << endl;
+	pidevice.MOV(axis, endpos);
+	cout << "here2?" << endl;
+	short int count = 0;
+	for (double i = startpos; i <= endpos[0]; i += imagespacing){
+		cout << "here3?" << endl;
+		bool captured = false;
+		while (!captured){
+			cout << "here4?" << endl;
+			if (i > pidevice.qPOS(axis)){
+				cout << "here5?" << endl;
+				cap.read(Photos[count].image);
+				captured = true;
+				count++;
+			}
+		} 
+	}
+	return count;
+}*/
+
+double RunCoarseStageData(PIDevice pidevice, VideoCapture cap, short int numImages, short int imagespacing, short int dataspacing, short int step1, short int step2){
 	//Create internal storage
 	vector<Photo> Photos;
 	vector<thread> Threads;
 	vector<double> Contrasts;
 	//Load dataset
 	short int numLoaded = LoadDataSetCoarseStage("/home/pi/Desktop/C++/Autofocus Data Sets/100 Image Sets/2021-09-28-15-56-57", numImages, imagespacing, dataspacing, Photos);
+	//Collect dataset
+	double endpos[1] = {10.0};
+	//short int numLoaded = ImageCapture(pidevice, cap, dataspacing, Photos, 0, endpos, "Z ");
 	//Process dataset
 	for(short int i = 0; i < numLoaded; i++){
 		Threads.push_back(thread(ProcessContrast, ref(Photos[i]), step1, step2));
@@ -152,7 +184,7 @@ auto RunCoarseStageData(short int numImages, short int imagespacing, short int d
 	//Gather data
 	double MaxContrast = *max_element(Contrasts.begin(), Contrasts.end());
 	auto it = find(Contrasts.begin(), Contrasts.end(), MaxContrast);
-	auto MaxFocus = distance(Contrasts.begin(), it) * dataspacing;
+	double MaxFocus = (double)(distance(Contrasts.begin(), it) * dataspacing);
 	return MaxFocus;
 }
 
@@ -177,22 +209,18 @@ auto RunFineStageData(short int numImages, short int imagespacing, short int dat
 	//Gather data
 	double MaxContrast = *max_element(Contrasts.begin(), Contrasts.end());
 	auto it = find(Contrasts.begin(), Contrasts.end(), MaxContrast);
-	auto MaxFocus = distance(Contrasts.begin(), it) * dataspacing2 + lbound;
+	auto MaxFocus = distance(Contrasts.begin(), it) * dataspacing2 + (double)lbound;
 	return MaxFocus;
 }
 
-void RunAutoFocus(short int numImages, short int imagespacing, short int dataspacing1, short int dataspacing2, short int step1, short int step2){
+/*void RunAutoFocus(short int numImages, short int imagespacing, short int dataspacing1, short int dataspacing2, short int step1, short int step2){
 	short int ipos = RunCoarseStageData(numImages, imagespacing, dataspacing1, step1, step2);
 	short int fpos = RunFineStageData(numImages, imagespacing, dataspacing1, dataspacing2, ipos, step1, step2);
 	cout << "Max Focus at position " << fpos << endl;
 }
-
-int main(int argc, char** argv)
+*/
+/*int main(int argc, char** argv)
 {
-	PIDevice pidevice;
-	pidevice.connectPI();
-	pidevice.sendrPI("*IDN?");
 	RunAutoFocus(100, 5, 50, 5, 2, 2);
-	close(pidevice.socket_desc);
     return 0;
-}
+}*/
