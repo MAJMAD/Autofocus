@@ -125,7 +125,7 @@ std::string PIDevice::sendReadSerial(string GCSCommand){
 			break;
 		}
 		else { readcount++;}
-		if (readcount >= 20){
+		if (readcount >= 10){
 			break;
 		}
 	}
@@ -144,12 +144,12 @@ std::string PIDevice::read(){
 	do{ 
 		serialPort.Read(readData);
 		strm << readData;
-		if (readData == ("\n") ){
+		if (readData == ("*\n") ){
 			//cout << readData;
 			break;
 		}
 		else { readcount++;}
-		if (readcount >= 20){
+		if (readcount >= 10){
 			break;
 		}
 	}
@@ -158,12 +158,12 @@ std::string PIDevice::read(){
 	return s;
 }
 
-int PIDevice::WaitOnTarget(){
+void PIDevice::WaitOnTarget(){
 	string response;
 	while(true){
-		sendSerial("ONT?\n", 1);
+		sendSerial("ONT?\n", 0);
 		response = read();
-		if (response == "C-891: 1=1\n"){
+		if (response == DeviceType + ": " + "1=1\n"){
 			//cout << response;
 			break;
 		}

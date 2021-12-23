@@ -90,7 +90,7 @@ void ProcessContrast(Photo &pic, short int step1, short int step2){
 	pic.setContrast(FindContrast(pic.image, step1, step2));
 }
 	
-short int LoadDataSetCoarseStage (string path, short int numImages, short int imagespacing, short int dataspacing, vector<Photo> &Photos){
+/*short int LoadDataSetCoarseStage (string path, short int numImages, short int imagespacing, short int dataspacing, vector<Photo> &Photos){
 	short int loaded = 0;
 	for(short int i = 0; i <= numImages*imagespacing; i+= dataspacing){
 		Photo pic;
@@ -124,17 +124,62 @@ short int LoadDataSetFineStage (string path, short int numImages, short int imag
 		loaded++;
 	}
 	return loaded;
+}*/
+
+void showImage(Mat image){
+	for (;;)
+    {
+        // show live and wait for a key with timeout long enough to show images
+        imshow("Live", image);
+        if (waitKey(5) >= 0)
+            break;
+    }
 }
 
-/*short int ImageCapture(PIDevice pidevice, VideoCapture cap, short int imagespacing, vector<Photo> &Photos, double startpos, double* endpos){
-	pidevice.sendSerial("MOV 1 0");
-	//waitontarget todo
+short int ImageCapture(PIDevice &pidevice, VideoCapture &cap, double dataspacing, vector<Photo> &Photos, double startpos, double endpos){
+	pidevice.sendSerial("MOV 1 "  +  to_string(startpos) + "\n");
+	cout << "MOV 1 "  +  to_string(startpos) + "\n";
+	pidevice.WaitOnTarget();
 	int index = 0;
-	for (double i = startpos; i <= endpos[0]; i += imagespacing){
-		cap.read(Photos[index].image);
+	for (double i = startpos; i <= endpos; i += dataspacing){
+		cout << i << endl;
+		Photo pic;
+		for (int i = 0; i < 6; i++){
+			cap >> pic.image;
+		}
+		cvtColor(pic.image, pic.image, cv::COLOR_BGR2GRAY);
+		Photos.push_back(pic);
 		index++;
-		pidevice.sendSerial("MVR 1" +  to_string(imagespacing);
-		//waitontarget todo 
+		pidevice.sendSerial("MVR 1 " +  to_string(dataspacing) + "\n");
+		pidevice.WaitOnTarget();
+	}
+	return index;
+}
+
+short int ImageCaptureOnTheFly(PIDevice &pidevice, VideoCapture &cap, double dataspacing, vector<Photo> &Photos, double startpos, double endpos){
+	pidevice.sendSerial("MOV 1 "  +  to_string(startpos) + "\n");
+	pidevice.WaitOnTarget();
+	int index = 0;
+	pidevice.sendSerial("MOV 1 "  +  to_string(endpos) + "\n");
+	for (double i = startpos; i <= endpos; i += dataspacing){
+		bool captured = false;
+		Photo pic;
+		string response;
+		while (!captured){
+			pidevice.sendSerial("POS?\n", 0);
+			response = pidevice.read();
+			cout << response << endl;
+			if (stod(response.substr(9,4)) > i){
+				captured = true;
+				index++;
+				for (int i = 0; i < 6; i++){
+					cap >> pic.image;
+				}
+				cvtColor(pic.image, pic.image, cv::COLOR_BGR2GRAY);
+				Photos.push_back(pic);
+				break;
+			}
+		}
 	}
 	return index;
 }
@@ -161,16 +206,13 @@ short int LoadDataSetFineStage (string path, short int numImages, short int imag
 	return count;
 }*/
 
-double RunCoarseStageData(PIDevice pidevice, VideoCapture cap, short int numImages, short int imagespacing, short int dataspacing, short int step1, short int step2){
+double RunStage(PIDevice &pidevice, VideoCapture &cap, double dataspacing, double start, double end, short int step1, short int step2){
 	//Create internal storage
 	vector<Photo> Photos;
 	vector<thread> Threads;
 	vector<double> Contrasts;
-	//Load dataset
-	short int numLoaded = LoadDataSetCoarseStage("/home/pi/Desktop/C++/Autofocus Data Sets/100 Image Sets/2021-09-28-15-56-57", numImages, imagespacing, dataspacing, Photos);
 	//Collect dataset
-	double endpos[1] = {10.0};
-	//short int numLoaded = ImageCapture(pidevice, cap, dataspacing, Photos, 0, endpos, "Z ");
+	short int numLoaded = ImageCapture(pidevice, cap, dataspacing, Photos, start, end);
 	//Process dataset
 	for(short int i = 0; i < numLoaded; i++){
 		Threads.push_back(thread(ProcessContrast, ref(Photos[i]), step1, step2));
@@ -181,14 +223,17 @@ double RunCoarseStageData(PIDevice pidevice, VideoCapture cap, short int numImag
 	for(short int i = 0; i < numLoaded; i++){
 		Contrasts.push_back(Photos[i].contrast);
 	}
+	for(short int i = 0; i < numLoaded; i++){
+		cout << i*dataspacing + start << ": " << Photos[i].contrast << endl;
+	}
 	//Gather data
 	double MaxContrast = *max_element(Contrasts.begin(), Contrasts.end());
 	auto it = find(Contrasts.begin(), Contrasts.end(), MaxContrast);
-	double MaxFocus = (double)(distance(Contrasts.begin(), it) * dataspacing);
+	double MaxFocus = (double)(distance(Contrasts.begin(), it) * dataspacing + start);
 	return MaxFocus;
 }
 
-auto RunFineStageData(short int numImages, short int imagespacing, short int dataspacing1, short int dataspacing2, short int start, short int step1, short int step2){
+/*auto RunFineStageData(short int numImages, short int imagespacing, short int dataspacing1, short int dataspacing2, short int start, short int step1, short int step2){
 	//Create internal storage
 	vector<Photo> Photos;
 	vector<thread> Threads;
@@ -211,14 +256,29 @@ auto RunFineStageData(short int numImages, short int imagespacing, short int dat
 	auto it = find(Contrasts.begin(), Contrasts.end(), MaxContrast);
 	auto MaxFocus = distance(Contrasts.begin(), it) * dataspacing2 + (double)lbound;
 	return MaxFocus;
+}*/
+
+double RunAutoFocus(PIDevice &pidevice, VideoCapture &cap, double start, double end, short int step1, short int step2){
+	double dataspacing = (end - start) / 10;
+	double CoarseMax1 = RunStage(pidevice, cap, dataspacing, start, end, step1, step2); // Outer Coarse Stage
+	double CoarseMax2 = RunStage(pidevice, cap, dataspacing, start + dataspacing / 2, end - dataspacing / 2, step1, step2); // Inner Coarse Stage
+	double FineStart;
+	double FineEnd;
+	
+	if (CoarseMax1 > CoarseMax2){
+		FineEnd = CoarseMax1;
+		FineStart = CoarseMax2;
+	}
+	else{
+		FineEnd = CoarseMax2;
+		FineStart = CoarseMax1;
+	}
+	dataspacing = (FineEnd - FineStart) / 5;
+	double fpos = RunStage(pidevice, cap, dataspacing, FineStart, FineEnd, step1, step2); //Fine stage*/
+	cout << "Max Focus at position " + to_string(fpos) << endl;
+	return fpos;
 }
 
-/*void RunAutoFocus(short int numImages, short int imagespacing, short int dataspacing1, short int dataspacing2, short int step1, short int step2){
-	short int ipos = RunCoarseStageData(numImages, imagespacing, dataspacing1, step1, step2);
-	short int fpos = RunFineStageData(numImages, imagespacing, dataspacing1, dataspacing2, ipos, step1, step2);
-	cout << "Max Focus at position " << fpos << endl;
-}
-*/
 /*int main(int argc, char** argv)
 {
 	RunAutoFocus(100, 5, 50, 5, 2, 2);
