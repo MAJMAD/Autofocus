@@ -1,0 +1,15 @@
+File: configedited.txt
+Original Path: /boot/config.txt
+Purpose of Change: Overclocking
+
+File: AutoFocusV6.desktop
+Original Path: ./.config/autostart/AutoFocusV6.desktop
+Purpose of Change: Creation and Autostart capability
+
+File: dhcpcdedited.conf
+Original Path: /etc/dhcpcd.conf
+Purpose of Change: Static IP Addressing
+
+File: lightdmedited.conf
+Original Path: /etc/lightdm/lightdm.conf
+Purpose of Change: Cursor Hiding

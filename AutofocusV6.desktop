@@ -1,0 +1,4 @@
+[Desktop Entry]
+Type= Application
+Name= AutofocusV6
+Exec= /usr/bin/python3 /home/raspberry/Desktop/'Semicon West'/AutofocusSemiconLinuxV6.py
