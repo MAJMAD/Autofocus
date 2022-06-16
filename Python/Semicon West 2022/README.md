@@ -14,3 +14,6 @@ The Documentation repository features the user manuals attributable to the major
 
 # Source Code
 The Source Code repository features the source code used by the Raspberry Pi host device that facilitates the rest of the system's main operations.
+
+# Acknowledgements 
+Acknowledgement and special thanks to Billy Machado, Dave Rego, Stefan Vorndran, and Michael Oldenburg for their guidance and work which supported the development and realization of this demo system.
