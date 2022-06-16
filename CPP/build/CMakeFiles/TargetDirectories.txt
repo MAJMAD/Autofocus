@@ -1,0 +1,3 @@
+/home/pi/Desktop/Autofocus/build/CMakeFiles/rebuild_cache.dir
+/home/pi/Desktop/Autofocus/build/CMakeFiles/main.dir
+/home/pi/Desktop/Autofocus/build/CMakeFiles/edit_cache.dir

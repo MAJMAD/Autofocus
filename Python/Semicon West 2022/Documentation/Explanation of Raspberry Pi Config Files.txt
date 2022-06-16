@@ -1,0 +1,15 @@
+File: config.txt
+Path: ~/boot/config.txt
+Purpose: Overclocking
+
+File: AutoFocusV6.desktop
+Path: home/raspberry/.config/autostart/AutoFocusV6.desktop
+Purpose: Autostarting
+
+File: dhcpcd.conf
+Path: ~/etc/dhcpcd.conf
+Purpose: Static IP Addressing
+
+File: lightdm.conf
+Path: ~/etc/lightdm/lightdm.conf
+Purpose: Cursor Hiding
